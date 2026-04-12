@@ -4,6 +4,7 @@ import json
 from datetime import date
 
 from rag_engine import RAGEngine, build_rag_prompt
+from docx_export import generate_docx
 
 @st.cache_resource
 def get_rag_engine():
@@ -707,7 +708,7 @@ with col_result:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Action buttons
-        btn_col1, btn_col2 = st.columns(2)
+        btn_col1, btn_col2, btn_col3 = st.columns(3)
         with btn_col1:
             st.download_button(
                 label="⬇ Скачать .txt",
@@ -716,6 +717,14 @@ with col_result:
                 mime="text/plain"
             )
         with btn_col2:
+            docx_bytes = generate_docx(doc_text, doc_type)
+            st.download_button(
+                label="⬇ Скачать .docx",
+                data=docx_bytes,
+                file_name=f"document_{date.today().strftime('%Y%m%d')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+        with btn_col3:
             if st.button("🔄 Сбросить"):
                 st.session_state.generated_doc = None
                 st.session_state.last_prompt = None
