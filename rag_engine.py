@@ -306,6 +306,28 @@ class RAGEngine:
 # ─────────────────────────────────────────────
 # build_rag_prompt — вызывается из app.py
 # ─────────────────────────────────────────────
+def _format_evidence(
+    evidence_checked: list[str],
+    evidence_details: dict,
+) -> str:
+    """
+    Формирует блок доказательств для промпта.
+    Если для доказательства заполнены детали — добавляет их.
+    """
+    if not evidence_checked:
+        return "  - не указаны"
+
+    lines = []
+    for ev in evidence_checked:
+        details = evidence_details.get(ev, {})
+        if details:
+            detail_parts = "; ".join(f"{k}: {v}" for k, v in details.items() if v)
+            lines.append(f"  ✓ {ev}\n      Детали: {detail_parts}")
+        else:
+            lines.append(f"  ✓ {ev}")
+    return "\n".join(lines)
+
+
 def build_rag_prompt(
     category: str,
     doc_type: str,
@@ -315,8 +337,12 @@ def build_rag_prompt(
     evidence_checked: list[str],
     extra_data: dict,
     rag_engine: RAGEngine,
+    evidence_details: dict | None = None,
 ) -> str:
     """Собирает финальный промпт: KB-контекст + данные пользователя + задача."""
+
+    if evidence_details is None:
+        evidence_details = {}
 
     category_key = CATEGORY_MAP.get(category, "return_goods")
     doc_type_key  = DOC_TYPE_MAP.get(doc_type, "pretrial")
@@ -336,11 +362,8 @@ def build_rag_prompt(
         for c in chunks if c.get("text", "").strip()
     )
 
-    # Доказательства
-    evidence_str = (
-        "\n".join(f"  - {e}" for e in evidence_checked)
-        if evidence_checked else "  - не указаны"
-    )
+    # Доказательства с деталями
+    evidence_str = _format_evidence(evidence_checked, evidence_details)
 
     # Блок данных пользователя
     if category_key == "return_goods":
